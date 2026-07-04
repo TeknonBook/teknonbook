@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
+import { checkOverdraft } from '../../lib/balances';
 
 function todayStr() {
   const d = new Date();
@@ -14,6 +15,7 @@ export default function TransactionsPage() {
   const { user, role } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -31,11 +33,14 @@ export default function TransactionsPage() {
     setLoading(true);
     const accRes = await supabase.from('accounts').select('*').eq('archived', false).order('id');
     const catRes = await supabase.from('categories').select('*').eq('archived', false).order('name');
+    const txRes = await supabase.from('transactions').select('*');
     if (accRes.error) setError(accRes.error.message);
     else if (catRes.error) setError(catRes.error.message);
+    else if (txRes.error) setError(txRes.error.message);
     else {
       setAccounts(accRes.data);
       setCategories(catRes.data);
+      setAllTransactions(txRes.data);
       setError(null);
     }
     setLoading(false);
@@ -79,6 +84,15 @@ export default function TransactionsPage() {
       notes: description.trim() || null,
       created_by: user?.id ?? null,
     };
+
+    // Overdraft guard: reject if this would take an operating account below zero
+    const guard = checkOverdraft(row, accounts, allTransactions);
+    if (!guard.ok) {
+      setSaving(false);
+      setError(guard.message);
+      return;
+    }
+
     const { error } = await supabase.from('transactions').insert(row);
     setSaving(false);
 
@@ -87,6 +101,9 @@ export default function TransactionsPage() {
     } else {
       setSuccess('Transaction saved.');
       resetForm();
+      // Refresh the transaction list so the next overdraft check uses current balances
+      const txRes = await supabase.from('transactions').select('*');
+      if (!txRes.error) setAllTransactions(txRes.data);
     }
   }
 
