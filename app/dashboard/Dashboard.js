@@ -10,16 +10,6 @@ function formatMoney(n) {
   return rounded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-const panelStyle = {
-  border: '1px solid #e2e2e2',
-  borderRadius: 12,
-  padding: 20,
-  marginBottom: 16,
-  background: 'white',
-};
-const panelTitle = { fontSize: 15, fontWeight: 700, marginTop: 0, marginBottom: 14, color: '#333' };
-const rowStyle = { display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f0f0f0', fontSize: 15 };
-
 export default function Dashboard() {
   const { role } = useAuth();
   const isAdmin = role === 'admin';
@@ -49,18 +39,16 @@ export default function Dashboard() {
     load();
   }, []);
 
-  if (loading) return <p style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>Loading dashboard…</p>;
-  if (error) return <p style={{ padding: 24, color: '#b71c1c', fontFamily: 'system-ui, sans-serif' }}>{error}</p>;
+  if (loading) return <div className="tk-page"><p className="tk-muted">Loading dashboard…</p></div>;
+  if (error) return <div className="tk-page"><div className="tk-alert-error">{error}</div></div>;
 
   const balances = balancesForAccounts(accounts, transactions);
   const operating = accounts.filter((a) => a.type === 'operating');
   const loans = accounts.filter((a) => a.type === 'loan');
 
-  // Spending summary (expenses only)
   const expenses = transactions.filter((t) => t.type === 'expense');
   const totalSpent = expenses.reduce((sum, t) => sum + Number(t.amount), 0);
 
-  // Spending by category
   const catName = (id) => categories.find((c) => c.id === id)?.name || 'Uncategorised';
   const byCategory = {};
   for (const e of expenses) {
@@ -69,84 +57,80 @@ export default function Dashboard() {
   }
   const categoryRows = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
 
-  // Recent transactions
   const accName = (id) => accounts.find((a) => a.id === id)?.name || '—';
   const recent = [...transactions]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 12);
 
-  return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 16px', fontFamily: 'system-ui, sans-serif' }}>
-      <h1 style={{ fontSize: 28, marginBottom: 20 }}>Dashboard</h1>
+  const moneyStyle = { fontWeight: 700, fontSize: 16 };
 
-      {/* PANEL 1 — Operating balances (admin only) */}
+  return (
+    <div className="tk-page">
+    <h1 className="tk-h1" style={{ fontFamily: 'var(--font-sora), system-ui, sans-serif', fontSize: 34, letterSpacing: '-0.03em' }}>Dashboard</h1>
+
       {isAdmin && (
-        <div style={panelStyle}>
-          <h2 style={panelTitle}>Operating Accounts — Available Balance</h2>
+        <div className="tk-card">
+          <h2 className="tk-panel-title">Operating Accounts · Available</h2>
           {operating.map((a) => (
-            <div key={a.id} style={rowStyle}>
+            <div key={a.id} className="tk-row">
               <span>{a.name}</span>
-              <strong>{formatMoney(balances.get(a.id) || 0)}</strong>
+              <span className="tk-money" style={{ ...moneyStyle, color: 'var(--text)' }}>{formatMoney(balances.get(a.id) || 0)}</span>
             </div>
           ))}
-          {operating.length === 0 && <p style={{ color: '#888' }}>No operating accounts.</p>}
+          {operating.length === 0 && <p className="tk-muted">No operating accounts.</p>}
         </div>
       )}
 
-      {/* PANEL 2 — Loan balances (admin only) */}
       {isAdmin && (
-        <div style={panelStyle}>
-          <h2 style={panelTitle}>Loan Accounts — Balance Owed (incl. interest)</h2>
+        <div className="tk-card">
+          <h2 className="tk-panel-title">Loan Accounts · Owed (incl. interest)</h2>
           {loans.map((a) => {
             const bal = balances.get(a.id) || 0;
             return (
-              <div key={a.id} style={rowStyle}>
-                <span>{a.name} <span style={{ color: '#999', fontSize: 13 }}>({a.interest_rate}%/yr)</span></span>
-                <strong style={{ color: bal < 0 ? '#b71c1c' : '#1b5e20' }}>{formatMoney(bal)}</strong>
+              <div key={a.id} className="tk-row">
+                <span>{a.name} <span className="tk-muted" style={{ fontSize: 13 }}>· {a.interest_rate}%/yr</span></span>
+                <span className="tk-money" style={{ ...moneyStyle, color: bal < 0 ? 'var(--negative)' : 'var(--positive)' }}>{formatMoney(bal)}</span>
               </div>
             );
           })}
-          {loans.length === 0 && <p style={{ color: '#888' }}>No loan accounts.</p>}
+          {loans.length === 0 && <p className="tk-muted">No loan accounts.</p>}
         </div>
       )}
 
-      {/* PANEL 3 — Total spending (everyone) */}
-      <div style={panelStyle}>
-        <h2 style={panelTitle}>Total Spending</h2>
-        <div style={{ fontSize: 30, fontWeight: 700, color: '#0070f3' }}>{formatMoney(totalSpent)}</div>
-        <div style={{ color: '#888', fontSize: 14, marginTop: 4 }}>{expenses.length} expense{expenses.length === 1 ? '' : 's'} recorded</div>
+      <div className="tk-card">
+        <h2 className="tk-panel-title">Total Spending</h2>
+        <div className="tk-money" style={{ fontSize: 34, fontWeight: 800, color: 'var(--accent)' }}>{formatMoney(totalSpent)}</div>
+        <div className="tk-muted" style={{ fontSize: 14, marginTop: 4 }}>{expenses.length} expense{expenses.length === 1 ? '' : 's'} recorded</div>
       </div>
 
-      {/* PANEL 4 — Spending by category (everyone) */}
-      <div style={panelStyle}>
-        <h2 style={panelTitle}>Spending by Category</h2>
+      <div className="tk-card">
+        <h2 className="tk-panel-title">Spending by Category</h2>
         {categoryRows.length === 0 ? (
-          <p style={{ color: '#888' }}>No expenses yet.</p>
+          <p className="tk-muted">No expenses yet.</p>
         ) : (
           categoryRows.map(([name, amount]) => (
-            <div key={name} style={rowStyle}>
+            <div key={name} className="tk-row">
               <span>{name}</span>
-              <strong>{formatMoney(amount)}</strong>
+              <span className="tk-money" style={moneyStyle}>{formatMoney(amount)}</span>
             </div>
           ))
         )}
       </div>
 
-      {/* PANEL 5 — Recent transactions (everyone) */}
-      <div style={panelStyle}>
-        <h2 style={panelTitle}>Recent Transactions</h2>
+      <div className="tk-card">
+        <h2 className="tk-panel-title">Recent Transactions</h2>
         {recent.length === 0 ? (
-          <p style={{ color: '#888' }}>No transactions yet.</p>
+          <p className="tk-muted">No transactions yet.</p>
         ) : (
           recent.map((t) => (
-            <div key={t.id} style={{ ...rowStyle, fontSize: 14 }}>
+            <div key={t.id} className="tk-row" style={{ fontSize: 14 }}>
               <span>
-                <span style={{ color: '#999' }}>{t.occurred_on}</span>{' '}
+                <span className="tk-muted">{t.occurred_on}</span>{' '}
                 <strong style={{ textTransform: 'capitalize' }}>{t.type}</strong>{' '}
                 {t.type === 'expense' ? accName(t.account_id) : `${accName(t.account_id)} → ${accName(t.to_account_id)}`}
-                {t.notes ? <span style={{ color: '#666' }}> · {t.notes}</span> : null}
+                {t.notes ? <span className="tk-muted"> · {t.notes}</span> : null}
               </span>
-              <strong>{formatMoney(t.amount)}</strong>
+              <span className="tk-money" style={moneyStyle}>{formatMoney(t.amount)}</span>
             </div>
           ))
         )}

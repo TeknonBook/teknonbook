@@ -37,20 +37,17 @@ export function AuthGate({ children }) {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '8px 16px',
-        background: '#f0f4ff',
-        fontSize: 14,
-        fontFamily: 'system-ui, sans-serif',
+        padding: '10px 16px',
+        background: 'var(--bg)',
+        borderBottom: '1px solid var(--border)',
+        fontSize: 13,
         flexWrap: 'wrap',
         gap: 8,
       }}>
-        <span style={{ color: '#333' }}>
-          {user.email} — <strong style={{ color: role === 'admin' ? '#0070f3' : '#666' }}>{role || 'no role'}</strong>
+        <span className="tk-muted">
+          {user.email} · <strong style={{ color: role === 'admin' ? 'var(--accent)' : 'var(--text-muted)' }}>{role || 'no role'}</strong>
         </span>
-        <button
-          onClick={signOut}
-          style={{ padding: '6px 14px', fontSize: 13, borderRadius: 6, border: '1px solid #ccc', background: 'white', cursor: 'pointer' }}
-        >
+        <button onClick={signOut} className="tk-btn tk-btn-ghost" style={{ padding: '7px 14px', fontSize: 13 }}>
           Sign out
         </button>
       </div>

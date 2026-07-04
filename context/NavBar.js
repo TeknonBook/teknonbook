@@ -1,43 +1,56 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthContext';
-
-const navLinkStyle = {
-  padding: '8px 14px',
-  borderRadius: 6,
-  textDecoration: 'none',
-  color: '#0070f3',
-  fontSize: 16,
-  fontWeight: 500,
-  border: '1px solid #d0d0d0',
-  background: 'white',
-};
 
 export function NavBar() {
   const { user, role } = useAuth();
+  const pathname = usePathname();
 
-  // No menu on the login screen / when signed out
   if (!user) return null;
-
   const isAdmin = role === 'admin';
+
+  const links = [
+    { href: '/', label: 'Dashboard' },
+    { href: '/transactions', label: 'Add' },
+    ...(isAdmin ? [{ href: '/accounts', label: 'Accounts' }] : []),
+    ...(isAdmin ? [{ href: '/categories', label: 'Categories' }] : []),
+  ];
 
   return (
     <nav
       style={{
         display: 'flex',
-        gap: 8,
-        padding: '12px 16px',
-        borderBottom: '1px solid #e5e5e5',
-        background: '#fafafa',
-        flexWrap: 'wrap',
-        fontFamily: 'system-ui, sans-serif',
+        gap: 6,
+        padding: '10px 12px',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--border)',
+        overflowX: 'auto',
       }}
     >
-      <Link href="/" style={navLinkStyle}>Home</Link>
-      <Link href="/transactions" style={navLinkStyle}>Add Transaction</Link>
-      {isAdmin && <Link href="/accounts" style={navLinkStyle}>Accounts</Link>}
-      {isAdmin && <Link href="/categories" style={navLinkStyle}>Categories</Link>}
+      {links.map((l) => {
+        const active = pathname === l.href;
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            style={{
+              padding: '9px 16px',
+              borderRadius: 9,
+              textDecoration: 'none',
+              fontSize: 15,
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              color: active ? '#06231b' : 'var(--text)',
+              background: active ? 'var(--accent)' : 'transparent',
+              border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
+            }}
+          >
+            {l.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
