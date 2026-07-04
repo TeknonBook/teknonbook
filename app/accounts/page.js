@@ -8,7 +8,6 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // New account form fields
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState('loan');
   const [newRate, setNewRate] = useState('');
@@ -34,11 +33,8 @@ export default function AccountsPage() {
 
   async function updateAccount(id, fields) {
     const { error } = await supabase.from('accounts').update(fields).eq('id', id);
-    if (error) {
-      setError(error.message);
-    } else {
-      loadAccounts();
-    }
+    if (error) setError(error.message);
+    else loadAccounts();
   }
 
   async function addAccount() {
@@ -66,52 +62,46 @@ export default function AccountsPage() {
   const archivedAccounts = accounts.filter((a) => a.archived);
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: '24px 16px', fontFamily: 'system-ui, sans-serif' }}>
-      <h1 style={{ fontSize: 28, marginBottom: 4 }}>Accounts</h1>
-      <p style={{ color: '#666', marginTop: 0, marginBottom: 24 }}>
+    <div className="tk-page">
+      <h1 className="tk-h1">Accounts</h1>
+      <p className="tk-muted" style={{ marginTop: -12, marginBottom: 24 }}>
         Rename accounts, set interest rates, add or archive accounts.
       </p>
 
-      {error && (
-        <div style={{ background: '#fdecea', color: '#b71c1c', padding: 12, borderRadius: 8, marginBottom: 16 }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="tk-alert-error">{error}</div>}
 
       {loading ? (
-        <p>Loading accounts…</p>
+        <p className="tk-muted">Loading accounts…</p>
       ) : (
         <>
           {activeAccounts.map((acc) => (
-            <div key={acc.id} style={{ border: '1px solid #ddd', borderRadius: 10, padding: 16, marginBottom: 12 }}>
-              <div style={{ marginBottom: 8 }}>
-                <label style={{ fontSize: 12, color: '#888' }}>Name</label><br />
-                <input
-                  defaultValue={acc.name}
-                  onBlur={(e) => {
-                    if (e.target.value.trim() && e.target.value !== acc.name) {
-                      updateAccount(acc.id, { name: e.target.value.trim() });
-                    }
-                  }}
-                  style={{ width: '100%', padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
-                />
-              </div>
+            <div key={acc.id} className="tk-card">
+              <label className="tk-label">Name</label>
+              <input
+                defaultValue={acc.name}
+                onBlur={(e) => {
+                  if (e.target.value.trim() && e.target.value !== acc.name) {
+                    updateAccount(acc.id, { name: e.target.value.trim() });
+                  }
+                }}
+                className="tk-input"
+              />
 
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                <div>
-                  <label style={{ fontSize: 12, color: '#888' }}>Type</label><br />
+                <div style={{ flex: 1, minWidth: 130 }}>
+                  <label className="tk-label">Type</label>
                   <select
                     value={acc.type}
                     onChange={(e) => updateAccount(acc.id, { type: e.target.value })}
-                    style={{ padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
+                    className="tk-select"
                   >
                     <option value="loan">Loan</option>
                     <option value="operating">Operating</option>
                   </select>
                 </div>
 
-                <div>
-                  <label style={{ fontSize: 12, color: '#888' }}>Interest rate (% / year)</label><br />
+                <div style={{ flex: 1, minWidth: 130 }}>
+                  <label className="tk-label">Interest rate (% / year)</label>
                   <input
                     type="number"
                     defaultValue={acc.interest_rate}
@@ -121,68 +111,62 @@ export default function AccountsPage() {
                         updateAccount(acc.id, { interest_rate: val });
                       }
                     }}
-                    style={{ width: 140, padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
+                    className="tk-input tk-money"
                   />
                 </div>
               </div>
 
               <button
                 onClick={() => updateAccount(acc.id, { archived: true })}
-                style={{ marginTop: 12, padding: '8px 14px', fontSize: 14, borderRadius: 6, border: '1px solid #ccc', background: '#f5f5f5', cursor: 'pointer' }}
+                className="tk-btn tk-btn-ghost"
+                style={{ fontSize: 14, padding: '9px 16px' }}
               >
                 Archive
               </button>
             </div>
           ))}
 
-          <div style={{ border: '2px dashed #bbb', borderRadius: 10, padding: 16, marginTop: 8, marginBottom: 24 }}>
-            <h3 style={{ marginTop: 0 }}>Add a new account</h3>
+          <div className="tk-card" style={{ border: '2px dashed var(--border)' }}>
+            <h3 style={{ marginTop: 0, fontSize: 16 }}>Add a new account</h3>
+            <label className="tk-label">Name</label>
             <input
               placeholder="Account name"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              style={{ width: '100%', padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc', marginBottom: 8 }}
+              className="tk-input"
             />
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-              <div>
-                <label style={{ fontSize: 12, color: '#888' }}>Type</label><br />
-                <select
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value)}
-                  style={{ padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
-                >
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 130 }}>
+                <label className="tk-label">Type</label>
+                <select value={newType} onChange={(e) => setNewType(e.target.value)} className="tk-select">
                   <option value="loan">Loan</option>
                   <option value="operating">Operating</option>
                 </select>
               </div>
-              <div>
-                <label style={{ fontSize: 12, color: '#888' }}>Interest rate (% / year)</label><br />
+              <div style={{ flex: 1, minWidth: 130 }}>
+                <label className="tk-label">Interest rate (% / year)</label>
                 <input
                   type="number"
                   placeholder="0"
                   value={newRate}
                   onChange={(e) => setNewRate(e.target.value)}
-                  style={{ width: 140, padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
+                  className="tk-input tk-money"
                 />
               </div>
-              <button
-                onClick={addAccount}
-                style={{ padding: '10px 18px', fontSize: 16, borderRadius: 6, border: 'none', background: '#0070f3', color: 'white', cursor: 'pointer' }}
-              >
-                Add account
-              </button>
             </div>
+            <button onClick={addAccount} className="tk-btn">Add account</button>
           </div>
 
           {archivedAccounts.length > 0 && (
             <div>
-              <h3 style={{ color: '#888' }}>Archived</h3>
+              <h3 className="tk-muted" style={{ fontSize: 15 }}>Archived</h3>
               {archivedAccounts.map((acc) => (
-                <div key={acc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #eee', borderRadius: 8, padding: 12, marginBottom: 8, color: '#888' }}>
-                  <span>{acc.name} ({acc.type})</span>
+                <div key={acc.id} className="tk-row">
+                  <span className="tk-muted">{acc.name} ({acc.type})</span>
                   <button
                     onClick={() => updateAccount(acc.id, { archived: false })}
-                    style={{ padding: '6px 12px', fontSize: 14, borderRadius: 6, border: '1px solid #ccc', background: '#f5f5f5', cursor: 'pointer' }}
+                    className="tk-btn tk-btn-ghost"
+                    style={{ fontSize: 13, padding: '7px 14px' }}
                   >
                     Restore
                   </button>

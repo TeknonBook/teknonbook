@@ -60,58 +60,54 @@ export default function CategoriesPage() {
   const activeCategories = categories.filter((c) => !c.archived);
 
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: '24px 16px', fontFamily: 'system-ui, sans-serif' }}>
-      <h1 style={{ fontSize: 28, marginBottom: 4 }}>Categories</h1>
-      <p style={{ color: '#666', marginTop: 0, marginBottom: 24 }}>
+    <div className="tk-page">
+      <h1 className="tk-h1">Categories</h1>
+      <p className="tk-muted" style={{ marginTop: -12, marginBottom: 24 }}>
         Rename, add, or delete expense categories.
       </p>
 
-      {error && (
-        <div style={{ background: '#fdecea', color: '#b71c1c', padding: 12, borderRadius: 8, marginBottom: 16 }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="tk-alert-error">{error}</div>}
 
       {loading ? (
-        <p>Loading categories…</p>
+        <p className="tk-muted">Loading categories…</p>
       ) : (
         <>
-          {activeCategories.map((cat) => (
-            <div key={cat.id} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-              <input
-                defaultValue={cat.name}
-                onBlur={(e) => {
-                  if (e.target.value.trim() && e.target.value !== cat.name) {
-                    updateCategory(cat.id, { name: e.target.value.trim() });
-                  }
-                }}
-                style={{ flex: 1, padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
-              />
-              <button
-                onClick={() => deleteCategory(cat.id, cat.name)}
-                style={{ padding: '10px 14px', fontSize: 14, borderRadius: 6, border: '1px solid #e0b4b4', background: '#fdecea', color: '#b71c1c', cursor: 'pointer' }}
-              >
-                Delete
-              </button>
-            </div>
-          ))}
+          <div className="tk-card">
+            {activeCategories.map((cat) => (
+              <div key={cat.id} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+                <input
+                  defaultValue={cat.name}
+                  onBlur={(e) => {
+                    if (e.target.value.trim() && e.target.value !== cat.name) {
+                      updateCategory(cat.id, { name: e.target.value.trim() });
+                    }
+                  }}
+                  className="tk-input"
+                  style={{ flex: 1, marginBottom: 0 }}
+                />
+                <button
+                  onClick={() => deleteCategory(cat.id, cat.name)}
+                  className="tk-btn tk-btn-danger"
+                  style={{ fontSize: 14, padding: '11px 16px' }}
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
 
-          <div style={{ border: '2px dashed #bbb', borderRadius: 10, padding: 16, marginTop: 16 }}>
-            <h3 style={{ marginTop: 0 }}>Add a new category</h3>
+          <div className="tk-card" style={{ border: '2px dashed var(--border)' }}>
+            <h3 style={{ marginTop: 0, fontSize: 16 }}>Add a new category</h3>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
                 placeholder="Category name"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') addCategory(); }}
-                style={{ flex: 1, padding: 10, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
+                className="tk-input"
+                style={{ flex: 1, marginBottom: 0 }}
               />
-              <button
-                onClick={addCategory}
-                style={{ padding: '10px 18px', fontSize: 16, borderRadius: 6, border: 'none', background: '#0070f3', color: 'white', cursor: 'pointer' }}
-              >
-                Add
-              </button>
+              <button onClick={addCategory} className="tk-btn">Add</button>
             </div>
           </div>
         </>

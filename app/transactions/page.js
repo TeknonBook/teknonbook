@@ -13,6 +13,7 @@ function todayStr() {
 
 export default function TransactionsPage() {
   const { user, role } = useAuth();
+
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [allTransactions, setAllTransactions] = useState([]);
@@ -85,7 +86,6 @@ export default function TransactionsPage() {
       created_by: user?.id ?? null,
     };
 
-    // Overdraft guard: reject if this would take an operating account below zero
     const guard = checkOverdraft(row, accounts, allTransactions);
     if (!guard.ok) {
       setSaving(false);
@@ -101,14 +101,10 @@ export default function TransactionsPage() {
     } else {
       setSuccess('Transaction saved.');
       resetForm();
-      // Refresh the transaction list so the next overdraft check uses current balances
       const txRes = await supabase.from('transactions').select('*');
       if (!txRes.error) setAllTransactions(txRes.data);
     }
   }
-
-  const labelStyle = { fontSize: 13, color: '#555', display: 'block', marginBottom: 4 };
-  const fieldStyle = { width: '100%', padding: 12, fontSize: 16, borderRadius: 8, border: '1px solid #ccc', marginBottom: 16, boxSizing: 'border-box' };
 
   const typeButton = (value, label) => (
     <button
@@ -118,11 +114,11 @@ export default function TransactionsPage() {
         padding: '12px 0',
         fontSize: 15,
         fontWeight: 600,
-        border: '1px solid ' + (type === value ? '#0070f3' : '#ccc'),
-        background: type === value ? '#0070f3' : 'white',
-        color: type === value ? 'white' : '#333',
-        borderRadius: 8,
+        borderRadius: 10,
         cursor: 'pointer',
+        border: '1px solid ' + (type === value ? 'var(--accent)' : 'var(--border)'),
+        background: type === value ? 'var(--accent)' : 'transparent',
+        color: type === value ? '#06231b' : 'var(--text)',
       }}
     >
       {label}
@@ -130,11 +126,8 @@ export default function TransactionsPage() {
   );
 
   return (
-    <div style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px', fontFamily: 'system-ui, sans-serif' }}>
-      <h1 style={{ fontSize: 28, marginBottom: 4 }}>Add Transaction</h1>
-      <p style={{ color: '#666', marginTop: 0, marginBottom: 20 }}>
-        Record an expense, transfer, or loan repayment.
-      </p>
+    <div className="tk-page" style={{ maxWidth: 560 }}>
+      <h1 className="tk-h1">Add Transaction</h1>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {typeButton('expense', 'Expense')}
@@ -142,104 +135,71 @@ export default function TransactionsPage() {
         {role === 'admin' && typeButton('repayment', 'Repayment')}
       </div>
 
-      {error && (
-        <div style={{ background: '#fdecea', color: '#b71c1c', padding: 12, borderRadius: 8, marginBottom: 16 }}>{error}</div>
-      )}
-      {success && (
-        <div style={{ background: '#e7f6e7', color: '#1b5e20', padding: 12, borderRadius: 8, marginBottom: 16 }}>{success}</div>
-      )}
+      {error && <div className="tk-alert-error">{error}</div>}
+      {success && <div className="tk-alert-success">{success}</div>}
 
       {loading ? (
-        <p>Loading…</p>
+        <p className="tk-muted">Loading…</p>
       ) : (
         <>
-          <label style={labelStyle}>Date</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={fieldStyle} />
+          <label className="tk-label">Date</label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="tk-input" />
 
-          {/* EXPENSE fields */}
           {type === 'expense' && (
             <>
-              <label style={labelStyle}>Account (drawn from)</label>
-              <select value={accountId} onChange={(e) => setAccountId(e.target.value)} style={fieldStyle}>
+              <label className="tk-label">Account (drawn from)</label>
+              <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="tk-select">
                 <option value="">— choose account —</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name} ({a.type})</option>
-                ))}
+                {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
               </select>
 
-              <label style={labelStyle}>Category</label>
-              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} style={fieldStyle}>
+              <label className="tk-label">Category</label>
+              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="tk-select">
                 <option value="">— choose category —</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+                {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
               </select>
             </>
           )}
 
-          {/* TRANSFER fields */}
           {type === 'transfer' && (
             <>
-              <label style={labelStyle}>From account</label>
-              <select value={accountId} onChange={(e) => setAccountId(e.target.value)} style={fieldStyle}>
+              <label className="tk-label">From account</label>
+              <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="tk-select">
                 <option value="">— choose account —</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name} ({a.type})</option>
-                ))}
+                {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
               </select>
 
-              <label style={labelStyle}>To account</label>
-              <select value={toAccountId} onChange={(e) => setToAccountId(e.target.value)} style={fieldStyle}>
+              <label className="tk-label">To account</label>
+              <select value={toAccountId} onChange={(e) => setToAccountId(e.target.value)} className="tk-select">
                 <option value="">— choose account —</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name} ({a.type})</option>
-                ))}
+                {accounts.map((a) => (<option key={a.id} value={a.id}>{a.name} ({a.type})</option>))}
               </select>
             </>
           )}
 
-          {/* REPAYMENT fields */}
           {type === 'repayment' && (
             <>
-              <label style={labelStyle}>From (operating account)</label>
-              <select value={accountId} onChange={(e) => setAccountId(e.target.value)} style={fieldStyle}>
+              <label className="tk-label">From (operating account)</label>
+              <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="tk-select">
                 <option value="">— choose account —</option>
-                {operatingAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
+                {operatingAccounts.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
               </select>
 
-              <label style={labelStyle}>To (loan account)</label>
-              <select value={toAccountId} onChange={(e) => setToAccountId(e.target.value)} style={fieldStyle}>
+              <label className="tk-label">To (loan account)</label>
+              <select value={toAccountId} onChange={(e) => setToAccountId(e.target.value)} className="tk-select">
                 <option value="">— choose account —</option>
-                {loanAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name}</option>
-                ))}
+                {loanAccounts.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
               </select>
             </>
           )}
 
-          <label style={labelStyle}>Amount</label>
-          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" style={fieldStyle} />
+          <label className="tk-label">Amount</label>
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="tk-input tk-money" />
 
-          <label style={labelStyle}>Description {type === 'expense' ? '(optional)' : ''}</label>
-          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What was this for?" style={fieldStyle} />
+          <label className="tk-label">Description {type === 'expense' ? '(optional)' : ''}</label>
+          <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What was this for?" className="tk-input" />
 
-          <button
-            onClick={saveTransaction}
-            disabled={saving}
-            style={{
-              width: '100%',
-              padding: 16,
-              fontSize: 17,
-              fontWeight: 600,
-              border: 'none',
-              borderRadius: 8,
-              background: saving ? '#9bc4f5' : '#0070f3',
-              color: 'white',
-              cursor: saving ? 'default' : 'pointer',
-            }}
-          >
+          <button onClick={saveTransaction} disabled={saving} className="tk-btn tk-btn-full">
             {saving ? 'Saving…' : 'Save transaction'}
           </button>
         </>
