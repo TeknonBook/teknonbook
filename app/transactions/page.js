@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 
 function todayStr() {
   const d = new Date();
@@ -10,6 +11,7 @@ function todayStr() {
 }
 
 export default function TransactionsPage() {
+  const { user, role } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,6 +77,7 @@ export default function TransactionsPage() {
       to_account_id: (type === 'transfer' || type === 'repayment') ? Number(toAccountId) : null,
       category_id: type === 'expense' ? Number(categoryId) : null,
       notes: description.trim() || null,
+      created_by: user?.id ?? null,
     };
     const { error } = await supabase.from('transactions').insert(row);
     setSaving(false);
@@ -118,8 +121,8 @@ export default function TransactionsPage() {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {typeButton('expense', 'Expense')}
-        {typeButton('transfer', 'Transfer')}
-        {typeButton('repayment', 'Repayment')}
+        {role === 'admin' && typeButton('transfer', 'Transfer')}
+        {role === 'admin' && typeButton('repayment', 'Repayment')}
       </div>
 
       {error && (
