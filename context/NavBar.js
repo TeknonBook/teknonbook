@@ -14,6 +14,7 @@ export function NavBar() {
   const links = [
     { href: '/', label: 'Dashboard' },
     { href: '/transactions', label: 'Add' },
+    { href: '/list', label: 'History' },
     ...(isAdmin ? [{ href: '/accounts', label: 'Accounts' }] : []),
     ...(isAdmin ? [{ href: '/categories', label: 'Categories' }] : []),
   ];

@@ -123,7 +123,12 @@ export default function Dashboard() {
           <p className="tk-muted">No transactions yet.</p>
         ) : (
           recent.map((t) => (
-            <div key={t.id} className="tk-row" style={{ fontSize: 14 }}>
+            <a
+              key={t.id}
+              href={`/list/edit/${t.id}`}
+              className="tk-row"
+              style={{ fontSize: 14, textDecoration: 'none', color: 'var(--text)' }}
+            >
               <span>
                 <span className="tk-muted">{t.occurred_on}</span>{' '}
                 <strong style={{ textTransform: 'capitalize' }}>{t.type}</strong>{' '}
@@ -131,7 +136,7 @@ export default function Dashboard() {
                 {t.notes ? <span className="tk-muted"> · {t.notes}</span> : null}
               </span>
               <span className="tk-money" style={moneyStyle}>{formatMoney(t.amount)}</span>
-            </div>
+            </a>
           ))
         )}
       </div>
