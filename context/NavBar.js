@@ -15,6 +15,7 @@ export function NavBar() {
     { href: '/', label: 'Dashboard' },
     { href: '/transactions', label: 'Add' },
     { href: '/list', label: 'History' },
+   { href: '/customers', label: 'Customers' },
     ...(isAdmin ? [{ href: '/accounts', label: 'Accounts' }] : []),
     ...(isAdmin ? [{ href: '/categories', label: 'Categories' }] : []),
   ];
