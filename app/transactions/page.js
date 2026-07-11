@@ -76,10 +76,14 @@ export default function TransactionsPage() {
 
     if (!date) return setError('Please choose a date.');
     if (!amount || Number(amount) <= 0) return setError('Please enter an amount greater than zero.');
-    if (!accountId) return setError('Please choose the account.');
+    if (type !== 'credit_sale' && !accountId) return setError('Please choose the account.');
     if (type === 'expense' && !categoryId) return setError('Please choose a category.');
     if (type === 'income' && !categoryId) return setError('Please choose an income category.');
     if (type === 'income' && !accountId) return setError('Please choose which account receives the money.');
+    if (type === 'credit_sale' && !customerId) return setError('Please choose the customer.');
+    if (type === 'credit_sale' && !categoryId) return setError('Please choose an income category.');
+    if (type === 'customer_payment' && !customerId) return setError('Please choose the customer.');
+    if (type === 'customer_payment' && !accountId) return setError('Please choose which account receives the payment.');
     if ((type === 'transfer' || type === 'repayment') && !toAccountId) return setError('Please choose the destination account.');
     if ((type === 'transfer' || type === 'repayment') && accountId === toAccountId) return setError('The two accounts must be different.');
 
@@ -88,11 +92,11 @@ export default function TransactionsPage() {
       occurred_on: date,
       type,
       amount: Number(amount),
-      account_id: Number(accountId),
+      account_id: accountId ? Number(accountId) : null,
       to_account_id: (type === 'transfer' || type === 'repayment') ? Number(toAccountId) : null,
-      category_id: type === 'expense' ? Number(categoryId) : null,
+      category_id: (type === 'expense' || type === 'income' || type === 'credit_sale') ? (categoryId ? Number(categoryId) : null) : null,
       notes: description.trim() || null,
-      customer_id: type === 'income' ? (customerId ? Number(customerId) : null) : null,
+     customer_id: ['income', 'credit_sale', 'customer_payment'].includes(type) ? (customerId ? Number(customerId) : null) : null,
       created_by: user?.id ?? null,
     };
 
@@ -142,6 +146,8 @@ export default function TransactionsPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {typeButton('expense', 'Expense')}
         {typeButton('income', 'Income')}
+        {typeButton('credit_sale', 'Credit Sale')}
+        {typeButton('customer_payment', 'Payment')}
         {role === 'admin' && typeButton('transfer', 'Transfer')}
         {role === 'admin' && typeButton('repayment', 'Repayment')}
       </div>
@@ -191,6 +197,43 @@ export default function TransactionsPage() {
                 <option value="">— no customer / walk-in —</option>
                 {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
               </select>
+            </>
+          )}
+          {type === 'credit_sale' && (
+            <>
+              <label className="tk-label">Customer</label>
+              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="tk-select">
+                <option value="">— choose customer —</option>
+                {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              </select>
+
+              <label className="tk-label">Income category</label>
+              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="tk-select">
+                <option value="">— choose category —</option>
+                {incomeCategories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              </select>
+              <p className="tk-muted" style={{ fontSize: 13, marginTop: -8 }}>
+                Records that this customer owes you. No cash received yet.
+              </p>
+            </>
+          )}
+
+          {type === 'customer_payment' && (
+            <>
+              <label className="tk-label">Customer</label>
+              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="tk-select">
+                <option value="">— choose customer —</option>
+                {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              </select>
+
+              <label className="tk-label">Received into (operating account)</label>
+              <select value={accountId} onChange={(e) => setAccountId(e.target.value)} className="tk-select">
+                <option value="">— choose account —</option>
+                {operatingAccounts.map((a) => (<option key={a.id} value={a.id}>{a.name}</option>))}
+              </select>
+              <p className="tk-muted" style={{ fontSize: 13, marginTop: -8 }}>
+                Records money received from a customer, reducing what they owe.
+              </p>
             </>
           )}
 
