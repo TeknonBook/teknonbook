@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
+import { customerBalance, totalReceivables } from '../../lib/balances';
 
 export default function CustomersPage() {
   const { user, role } = useAuth();
@@ -10,6 +11,7 @@ export default function CustomersPage() {
 
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [transactions, setTransactions] = useState([]);
   const [error, setError] = useState(null);
 
   const [showAdd, setShowAdd] = useState(false);
@@ -17,13 +19,15 @@ export default function CustomersPage() {
 
   async function load() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('archived', false)
-      .order('name', { ascending: true });
-    if (error) setError(error.message);
-    else { setCustomers(data); setError(null); }
+    const cusRes = await supabase.from('customers').select('*').eq('archived', false).order('name', { ascending: true });
+    const txRes = await supabase.from('transactions').select('*');
+    if (cusRes.error || txRes.error) {
+      setError((cusRes.error || txRes.error).message);
+    } else {
+      setCustomers(cusRes.data);
+      setTransactions(txRes.data);
+      setError(null);
+    }
     setLoading(false);
   }
 
@@ -32,6 +36,12 @@ export default function CustomersPage() {
   function canModify(c) {
     return isAdmin || c.created_by === user?.id;
   }
+  function formatMoney(n) {
+    const rounded = Math.round(Number(n) * 100) / 100;
+    return rounded.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  const totalOwed = totalReceivables(customers, transactions);
 
   async function addCustomer() {
     if (!form.name.trim()) { setError('Please enter a customer name.'); return; }
@@ -89,6 +99,14 @@ async function archiveCustomer(id, name) {
       <p className="tk-muted" style={{ marginTop: -12, marginBottom: 24 }}>
         People and businesses you sell to.
       </p>
+      {totalOwed > 0 && (
+        <div className="tk-card" style={{ borderColor: 'var(--accent)' }}>
+          <h2 className="tk-panel-title">Total Outstanding (owed to you)</h2>
+          <div className="tk-money" style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)' }}>
+            {formatMoney(totalOwed)}
+          </div>
+        </div>
+      )}
 
       {error && <div className="tk-alert-error">{error}</div>}
 
@@ -120,7 +138,15 @@ async function archiveCustomer(id, name) {
       ) : (
         customers.map((c) => (
           <div key={c.id} className="tk-card">
-            <div style={{ fontSize: 17, fontWeight: 700 }}>{c.name}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+              <a href={`/customers/${c.id}`} style={{ fontSize: 17, fontWeight: 700, color: 'var(--accent)', textDecoration: 'none' }}>{c.name} →</a>
+              {(() => {
+                const owed = customerBalance(c.id, transactions);
+                if (owed > 0.001) return <div className="tk-money" style={{ color: 'var(--negative)', fontWeight: 700, whiteSpace: 'nowrap' }}>Owes {formatMoney(owed)}</div>;
+                if (owed < -0.001) return <div className="tk-money" style={{ color: 'var(--accent)', fontWeight: 700, whiteSpace: 'nowrap' }}>Credit {formatMoney(-owed)}</div>;
+                return <div className="tk-muted" style={{ fontSize: 13, whiteSpace: 'nowrap' }}>Settled</div>;
+              })()}
+            </div>
             <div className="tk-muted" style={{ fontSize: 14, marginTop: 6, lineHeight: 1.6 }}>
               {c.phone && <div>📞 {c.phone}</div>}
               {c.email && <div>✉️ {c.email}</div>}
