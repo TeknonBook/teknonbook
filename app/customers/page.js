@@ -42,6 +42,15 @@ export default function CustomersPage() {
   }
 
   const totalOwed = totalReceivables(customers, transactions);
+  // Sort: those who owe the most first, then settled customers alphabetically
+  const sortedCustomers = [...customers].sort((a, b) => {
+    const owedA = customerBalance(a.id, transactions);
+    const owedB = customerBalance(b.id, transactions);
+    if (owedA > 0.001 && owedB <= 0.001) return -1;
+    if (owedB > 0.001 && owedA <= 0.001) return 1;
+    if (owedA > 0.001 && owedB > 0.001) return owedB - owedA;
+    return a.name.localeCompare(b.name);
+  });
 
   async function addCustomer() {
     if (!form.name.trim()) { setError('Please enter a customer name.'); return; }
@@ -136,7 +145,7 @@ async function archiveCustomer(id, name) {
       ) : customers.length === 0 ? (
         <div className="tk-card"><p className="tk-muted" style={{ margin: 0 }}>No customers yet. Add your first one above.</p></div>
       ) : (
-        customers.map((c) => (
+        sortedCustomers.map((c) => (
           <div key={c.id} className="tk-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <a href={`/customers/${c.id}`} style={{ fontSize: 17, fontWeight: 700, color: 'var(--accent)', textDecoration: 'none' }}>{c.name} →</a>

@@ -62,6 +62,8 @@ export default function Dashboard() {
   const balances = balancesForAccounts(accounts, transactions);
   const operating = accounts.filter((a) => a.type === 'operating');
   const loans = accounts.filter((a) => a.type === 'loan');
+  const activeOperating = operating.filter((a) => Math.abs(balances.get(a.id) || 0) > 0.001);
+  const activeLoans = loans.filter((a) => Math.abs(balances.get(a.id) || 0) > 0.001);
 
   const cashAvailable = operating.reduce((s, a) => s + (balances.get(a.id) || 0), 0);
   const totalOwedLoans = loans.reduce((s, a) => s + (balances.get(a.id) || 0), 0); // negative
@@ -83,17 +85,21 @@ export default function Dashboard() {
 
   const expenseByCat = {};
   for (const e of periodExpenses) {
+    const key = e.category_id || 'none';
     const n = catName(e.category_id);
-    expenseByCat[n] = (expenseByCat[n] || 0) + Number(e.amount);
+    if (!expenseByCat[key]) expenseByCat[key] = { id: e.category_id, name: n, amount: 0 };
+    expenseByCat[key].amount += Number(e.amount);
   }
-  const expenseCatRows = Object.entries(expenseByCat).sort((a, b) => b[1] - a[1]);
+  const expenseCatRows = Object.values(expenseByCat).sort((a, b) => b.amount - a.amount);
 
   const incomeByCat = {};
   for (const i of periodIncome) {
+    const key = i.category_id || 'payment';
     const n = i.category_id ? catName(i.category_id) : 'Customer payment';
-    incomeByCat[n] = (incomeByCat[n] || 0) + Number(i.amount);
+    if (!incomeByCat[key]) incomeByCat[key] = { id: i.category_id, name: n, amount: 0 };
+    incomeByCat[key].amount += Number(i.amount);
   }
-  const incomeCatRows = Object.entries(incomeByCat).sort((a, b) => b[1] - a[1]);
+  const incomeCatRows = Object.values(incomeByCat).sort((a, b) => b.amount - a.amount);
 
   const recent = [...transactions]
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -104,12 +110,22 @@ export default function Dashboard() {
     customer_payment: 'Payment', transfer: 'Transfer', repayment: 'Repayment',
   };
 
-  const statBox = (label, value, color) => (
-    <div style={{ flex: 1, minWidth: 150 }}>
-      <div className="tk-panel-title" style={{ marginBottom: 6 }}>{label}</div>
-      <div className="tk-money" style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
-    </div>
-  );
+  const statBox = (label, value, color, href) => {
+    const inner = (
+      <>
+        <div className="tk-panel-title" style={{ marginBottom: 6 }}>{label}{href ? ' →' : ''}</div>
+        <div className="tk-money" style={{ fontSize: 22, fontWeight: 800, color }}>{value}</div>
+      </>
+    );
+    if (href) {
+      return (
+        <a href={href} style={{ flex: 1, minWidth: 150, textDecoration: 'none', color: 'var(--text)' }}>
+          {inner}
+        </a>
+      );
+    }
+    return <div style={{ flex: 1, minWidth: 150 }}>{inner}</div>;
+  };
 
   return (
     <div className="tk-page">
@@ -121,7 +137,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             {statBox('Cash available', formatMoney(cashAvailable), 'var(--accent)')}
             {statBox('Loans owed', formatMoney(totalOwedLoans), totalOwedLoans < -0.001 ? 'var(--negative)' : 'var(--accent)')}
-            {statBox('Owed to you', formatMoney(owedToYou), owedToYou > 0.001 ? 'var(--negative)' : 'var(--text-muted)')}
+            {statBox('Owed to you', formatMoney(owedToYou), owedToYou > 0.001 ? 'var(--negative)' : 'var(--text-muted)', '/customers')}
           </div>
         </div>
       )}
@@ -130,13 +146,13 @@ export default function Dashboard() {
       {isAdmin && (
         <div className="tk-card">
           <h2 className="tk-panel-title">Accounts</h2>
-          {operating.map((a) => (
+          {activeOperating.map((a) => (
             <div key={a.id} className="tk-row">
               <span>{a.name}</span>
               <span className="tk-money" style={{ fontWeight: 700 }}>{formatMoney(balances.get(a.id) || 0)}</span>
             </div>
           ))}
-          {loans.map((a) => {
+          {activeLoans.map((a) => {
             const bal = balances.get(a.id) || 0;
             return (
               <div key={a.id} className="tk-row">
@@ -145,6 +161,9 @@ export default function Dashboard() {
               </div>
             );
           })}
+          {activeOperating.length === 0 && activeLoans.length === 0 && (
+            <p className="tk-muted" style={{ margin: 0 }}>All accounts are at zero.</p>
+          )}
         </div>
       )}
 
@@ -186,11 +205,18 @@ export default function Dashboard() {
         <h2 className="tk-panel-title">Income by Category</h2>
         {incomeCatRows.length === 0 ? (
           <p className="tk-muted" style={{ margin: 0 }}>No income in this period.</p>
-        ) : incomeCatRows.map(([name, amt]) => (
-          <div key={name} className="tk-row">
-            <span>{name}</span>
-            <span className="tk-money" style={{ fontWeight: 700 }}>{formatMoney(amt)}</span>
-          </div>
+        ) : incomeCatRows.map((row) => (
+          row.id ? (
+            <a key={row.id} href={`/category/${row.id}?from=${fromDate}&to=${toDate}`} className="tk-row" style={{ textDecoration: 'none', color: 'var(--text)' }}>
+              <span>{row.name} <span className="tk-muted">→</span></span>
+              <span className="tk-money" style={{ fontWeight: 700 }}>{formatMoney(row.amount)}</span>
+            </a>
+          ) : (
+            <div key="payment" className="tk-row">
+              <span>{row.name}</span>
+              <span className="tk-money" style={{ fontWeight: 700 }}>{formatMoney(row.amount)}</span>
+            </div>
+          )
         ))}
       </div>
 
@@ -199,11 +225,18 @@ export default function Dashboard() {
         <h2 className="tk-panel-title">Spending by Category</h2>
         {expenseCatRows.length === 0 ? (
           <p className="tk-muted" style={{ margin: 0 }}>No expenses in this period.</p>
-        ) : expenseCatRows.map(([name, amt]) => (
-          <div key={name} className="tk-row">
-            <span>{name}</span>
-            <span className="tk-money" style={{ fontWeight: 700 }}>{formatMoney(amt)}</span>
-          </div>
+        ) : expenseCatRows.map((row) => (
+          row.id ? (
+            <a key={row.id} href={`/category/${row.id}?from=${fromDate}&to=${toDate}`} className="tk-row" style={{ textDecoration: 'none', color: 'var(--text)' }}>
+              <span>{row.name} <span className="tk-muted">→</span></span>
+              <span className="tk-money" style={{ fontWeight: 700 }}>{formatMoney(row.amount)}</span>
+            </a>
+          ) : (
+            <div key="none" className="tk-row">
+              <span>{row.name}</span>
+              <span className="tk-money" style={{ fontWeight: 700 }}>{formatMoney(row.amount)}</span>
+            </div>
+          )
         ))}
       </div>
 
